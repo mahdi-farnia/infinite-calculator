@@ -12,6 +12,8 @@
 #include <string_view>
 #include <cstdint> // uint8_t
 
+#define StringedNumberCompare(num1, op, num2) (num1.size() == num2.size() ? num1 op num2 : num1.size() op num2.size())
+
 constexpr uint8_t charToDigit(char ch) {
     return ch ? ch - '0' : 0;
 }

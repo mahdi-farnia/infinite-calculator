@@ -8,12 +8,11 @@
 #include <string>
 #include <string_view>
 #include "bigint.hpp"
-#include "misc.hpp"
 
 static inline std::string evaluate(std::string_view lhs, char opt, std::string_view rhs) {
     switch (opt) {
         case '-':
-            return bigint::sub(lhs, revertSign(rhs));
+            return bigint::sub(lhs, rhs);
 
         case '+':
             return bigint::sum(lhs, rhs);

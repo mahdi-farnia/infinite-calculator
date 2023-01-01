@@ -17,7 +17,7 @@ namespace bigint {
 std::string sum(std::string_view, std::string_view);
 std::string sub(std::string_view, std::string_view);
 std::string multiply(std::string_view, std::string_view);
-std::string divide(std::string_view, std::string_view);
+std::string divide(std::string_view, std::string_view, std::string * = nullptr);
 }
 
 #endif /* bigint_hpp */
