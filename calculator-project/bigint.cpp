@@ -18,7 +18,9 @@ inline std::string makeZero(size_t count) {
 }
 };
 
-std::string bigint::sum(std::string_view greaterNumber, std::string_view lessNumber) {
+namespace bigint {
+
+std::string sum(std::string_view greaterNumber, std::string_view lessNumber) {
     if (!hasEqualSign(greaterNumber, lessNumber))
         return bigint::sub(greaterNumber, lessNumber);
     
@@ -48,16 +50,15 @@ std::string bigint::sum(std::string_view greaterNumber, std::string_view lessNum
     return result;
 }
 
-std::string bigint::sub(std::string_view greaterView, std::string_view lessView) {
+std::string sub(std::string_view greaterView, std::string_view lessView) {
     if (!hasEqualSign(greaterView, lessView))
         return bigint::sum(greaterView, revertSign(lessView));
     
-    // extra lookup for sorting in case of => greater = 33, less = 44
-    if (StringedNumberCompare(removeSign(greaterView), <, removeSign(lessView)))
+    bool hasSign = StringedNumberCompare(removeSign(greaterView), <, removeSign(lessView));
+
+    if (hasSign)
         greaterView.swap(lessView);
-    
-    bool hasSign = greaterView[0] == '-';
-    
+
     greaterView = removeSign(greaterView);
     lessView = removeSign(lessView);
     
@@ -87,7 +88,7 @@ std::string bigint::sub(std::string_view greaterView, std::string_view lessView)
     return result;
 }
 
-std::string bigint::multiply(std::string_view greaterNumber, std::string_view lessNumber) {
+std::string multiply(std::string_view greaterNumber, std::string_view lessNumber) {
     bool resultIsPositive = hasEqualSign(greaterNumber, lessNumber);
     
     sortAndRemoveSign(greaterNumber, lessNumber);
@@ -107,7 +108,7 @@ std::string bigint::multiply(std::string_view greaterNumber, std::string_view le
     return resultIsPositive ? result : revertSign(result);
 }
 
-std::string bigint::divide(std::string_view lhs, std::string_view rhs, std::string *resultRemain /* default: nullptr */) {
+std::string divide(std::string_view lhs, std::string_view rhs, std::string *resultRemain /* default: nullptr */) {
     bool resultIsPositive = hasEqualSign(lhs, rhs);
     
     // Do not sort numbers. order is important!

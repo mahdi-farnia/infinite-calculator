@@ -11,8 +11,6 @@
 #include <string>
 #include <string_view>
 
-#define Macro2String(x) #x
-
 namespace bigint {
 std::string sum(std::string_view, std::string_view);
 std::string sub(std::string_view, std::string_view);
