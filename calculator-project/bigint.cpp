@@ -55,10 +55,10 @@ std::string sub(std::string_view greaterView, std::string_view lessView) {
         return bigint::sum(greaterView, revertSign(lessView));
     
     bool hasSign = StringedNumberCompare(removeSign(greaterView), <, removeSign(lessView));
-
+    
     if (hasSign)
         greaterView.swap(lessView);
-
+    
     greaterView = removeSign(greaterView);
     lessView = removeSign(lessView);
     
@@ -127,7 +127,7 @@ std::string divide(std::string_view lhs, std::string_view rhs, std::string *resu
     for (size_t i = 0; true;) {
         remain.append(lhs.substr(rhs.size() * i, rhs.size()));
         normalizeNumber(remain); // in case of 0034
-
+        
         size_t coefficient{};
         while (StringedNumberCompare(remain, >=, rhs)) {
             remain = sub(remain, rhs);
@@ -144,6 +144,7 @@ std::string divide(std::string_view lhs, std::string_view rhs, std::string *resu
     
     if (resultRemain != nullptr) *resultRemain = remain;
     normalizeNumber(result);
-
+    
     return resultIsPositive ? result : revertSign(result);
+}
 }
