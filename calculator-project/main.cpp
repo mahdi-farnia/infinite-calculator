@@ -6,40 +6,47 @@
 
 #include <iostream>
 #include <string>
-#include <string_view>
 #include "bigint.hpp"
+#include "misc.hpp"
 
-static inline std::string evaluate(std::string_view lhs, char opt, std::string_view rhs) {
+static inline std::string evaluate(std::string &lhs, char opt, std::string &rhs) {
     switch (opt) {
-        case '-':
-            return bigint::sub(lhs, rhs);
-
-        case '+':
-            return bigint::sum(lhs, rhs);
-
         case '*':
-            return bigint::multiply(lhs, rhs);
+            return bigint::multiplyFloating(lhs, rhs);
 
         case '/':
-            return bigint::divide(lhs, rhs);
+            return bigint::divideFloating(lhs, rhs);
 
         default: {
             std::string err{"Unknown operator used in expression: "};
             err += opt;
-            return err;
+            throw err;
         }
     }
 }
 
 int main(int argc, const char * argv[]) {
-    std::string lhs, rhs;
+    std::string lhs, rhs, result;
     char opt;
 
     while (true) {
         std::cout << "$: ";
+
         std::cin >> lhs >> opt >> rhs;
 
-        std::cout << evaluate(lhs, opt, rhs) << '\n';
+        normalizeNumber(lhs);
+        normalizeNumber(rhs);
+        
+        try {
+            result = evaluate(lhs, opt, rhs);
+
+            normalizeNumber(result);
+            formatNumber(result);
+        } catch (std::string &err) {
+            result = err;
+        }
+
+        std::cout << result << '\n';
     }
 
     return 0;

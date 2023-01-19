@@ -8,6 +8,8 @@
 #include "bigint.hpp"
 #include "misc.hpp"
 
+#define MAX_PRECISION 6
+
 namespace {
 inline std::string makeZero(size_t count) {
     std::string result;
@@ -81,7 +83,7 @@ std::string sub(std::string_view greaterView, std::string_view lessView) {
         result[greater_index] = digitToChar(b - a);
     }
     
-    normalizeNumber(result);
+    normalizeFractionPart(result, result.size());
     
     if (hasSign) result.insert(0, 1, '-');
     
@@ -108,43 +110,93 @@ std::string multiply(std::string_view greaterNumber, std::string_view lessNumber
     return resultIsPositive ? result : revertSign(result);
 }
 
+/** lhs should always be greater than rhs, two numbers are normalized completely */
 std::string divide(std::string_view lhs, std::string_view rhs, std::string *resultRemain /* default: nullptr */) {
-    bool resultIsPositive = hasEqualSign(lhs, rhs);
-    
-    // Do not sort numbers. order is important!
-    lhs = removeSign(lhs);
-    rhs = removeSign(rhs);
-    
-    if (rhs[0] == '0')
-        return "ZeroDivisionError: could not divide by zero!";
-    if (lhs[0] == '0') // Floating point numbers are not supported yet!
-        return "0";
-    
-    std::string result;
-    std::string remain;
-    
-    size_t count = lhs.size() / rhs.size() + (lhs.size() % rhs.size() != 0); // ceil operation
-    for (size_t i = 0; true;) {
-        remain.append(lhs.substr(rhs.size() * i, rhs.size()));
-        normalizeNumber(remain); // in case of 0034
+    std::string result, remain, temp_remain;
+    size_t coefficient{};
+
+    for(size_t i{}, len = lhs.size() - rhs.size() + 1; i < len; ++i) {
+        // Slice lhs by rhs length first time and then go 1 by 1
+        remain += i == 0 ? lhs.substr(0, rhs.size()) : lhs.substr(rhs.size() + (i - 1), 1);
         
-        size_t coefficient{};
-        while (StringedNumberCompare(remain, >=, rhs)) {
-            remain = sub(remain, rhs);
-            ++coefficient;
+        normalizeFractionPart(remain, remain.size());
+
+        coefficient = 0;
+        temp_remain = sub(remain, rhs);
+
+        if (temp_remain[0] != '-') { // if picked range is less than rhs -> put zero otherwise do division
+            remain = temp_remain;
+            ++coefficient; // count previous subtract
+
+            while (StringedNumberCompare(remain, >=, rhs)) {
+                remain = sub(remain, rhs);
+                ++coefficient;
+            }
         }
         
-        result.append(std::to_string(coefficient));
-        
-        if (++i >= count) {
-            if (result.back() == '0') result.pop_back();
-            break;
-        }
+        result += std::to_string(coefficient);
     }
     
-    if (resultRemain != nullptr) *resultRemain = remain;
-    normalizeNumber(result);
+    if (resultRemain != nullptr)
+        *resultRemain = remain;
     
-    return resultIsPositive ? result : revertSign(result);
+    normalizeFractionPart(result, result.size());
+    return result;
+}
+
+std::string multiplyFloating(std::string &lhs, std::string &rhs) {
+    size_t finalPos = removeDot(lhs) + removeDot(rhs);
+    std::string result = multiply(lhs, rhs);
+    
+    if (result != "0") result.insert(result.size() - finalPos, ".");
+
+    return result;
+}
+
+std::string divideFloating(std::string &lhs, std::string &rhs, std::string *resultRemain) {
+    long finalPos = removeDot(lhs) - removeDot(rhs);
+
+    if (rhs == "0")
+        throw std::string("ZeroDivisionError: could not divide by zero");
+    if (lhs == "0")
+        return "0.0";
+    
+    if (finalPos < 0) { // multiply lhs and rhs by 10 ^ |finalPos|
+        lhs.append(makeZero(-finalPos));
+        finalPos = 0;
+    }
+    
+    bool resultIsNegative = !hasEqualSign(lhs, rhs);
+
+    lhs = removeSign(lhs);
+    rhs = removeSign(rhs);
+
+    std::string remain = lhs, result;
+    long precision = -1; // do not count the first division
+
+    for (; precision < MAX_PRECISION; ++precision) {
+        if (StringedNumberCompare(remain, >=, rhs))
+            result += divide(remain, rhs, &remain);
+        else result += "0";
+
+        ++finalPos;
+        if (remain == "0") break;
+        
+        remain += "0";
+    }
+
+    if (result != "0") {
+        long index = result.size() - (finalPos - 1);
+        
+        // In case of result is less than 0 and we should put dot behind the number
+        if (index < 0) {
+            result.insert(0, makeZero(-index));
+            index = 0;
+        }
+
+        result.insert(index, ".");
+    }
+    
+    return resultIsNegative ? revertSign(result) : result;
 }
 }
